@@ -31,9 +31,20 @@ SKIP_SUFFIX = {".log", ".jsonl", ".pyc", ".db", ".zip"}
 ALLOW_FILES = {"secrets.example.json", "precommit_secret_scan.py"}
 
 
+def _git_bin() -> str:
+    """优先用 PATH 里的 git，否则用便携版（本机 git 不在 PATH）。"""
+    import shutil
+
+    for cand in (os.environ.get("GIT_BIN"), shutil.which("git"),
+                 r"D:\agent-memory-lab\toolchain\git\cmd\git.exe"):
+        if cand and os.path.exists(cand):
+            return cand
+    return "git"
+
+
 def iter_files(staged: bool):
     if staged:
-        out = subprocess.run(["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],
+        out = subprocess.run([_git_bin(), "diff", "--cached", "--name-only", "--diff-filter=ACM"],
                              cwd=ROOT, capture_output=True, text=True)
         for name in (out.stdout or "").splitlines():
             p = ROOT / name.strip()
