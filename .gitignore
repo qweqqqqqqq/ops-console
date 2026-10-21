@@ -19,3 +19,8 @@ venv/
 Thumbs.db
 Desktop.ini
 *.bak-*
+
+# ── 本地专用（不入公开仓库）──
+tools/novai_*.py
+docs/*申请草稿*
+docs/*OPENAI-CODEX*
