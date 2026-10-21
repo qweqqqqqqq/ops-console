@@ -337,7 +337,21 @@ def audit() -> dict:
         # E. Key 为空 / 掩码 / 过短
         badkey = cur.execute(
             "select id, name, length(key) from channels "
-            "where status=1 and (key is null or length(trim(key))<10 or key like '%*%') limit 10"
+            "where status=1 and (key is null or length(trim(key))<10 or key like '%*%') "
+            # 无 key 的免费源是设计如此（build_chan.py 支持 keyless），不算可疑：
+            # OVH / free.ai / kilo / UncloseAI / pollinations / ollama / kepler
+            "and coalesce(base_url,'') not like '%ovh%' "
+            "and coalesce(base_url,'') not like '%kepler%' "
+            "and coalesce(base_url,'') not like '%free.ai%' "
+            "and coalesce(base_url,'') not like '%kilo%' "
+            "and coalesce(base_url,'') not like '%unclose%' "
+            "and coalesce(base_url,'') not like '%pollinations%' "
+            "and coalesce(base_url,'') not like '%ollama%' "
+            "and coalesce(base_url,'') not like '%unturf%' "
+            # 本机适配层（127.0.0.1:87xx）由适配器自己带上游凭据
+            "and coalesce(base_url,'') not like 'http://127.0.0.1%' "
+            "and coalesce(base_url,'') not like 'http://localhost%' "
+            "limit 10"
         ).fetchall()
         if badkey:
             findings.append({"level": "warn", "code": "E-bad-key",
