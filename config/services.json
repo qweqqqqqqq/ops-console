@@ -1,0 +1,196 @@
+{
+  "_comment": "补号/中转栈控制台的服务清单 —— 唯一事实源。未登记在此的服务，控制台一律不碰。",
+  "svc_manager": {
+    "path": "svc_manager.py",
+    "python": "auto",
+    "note": "既有服务管理器的 --status/--json/--start 是控制台的状态来源之一"
+  },
+  "services": [
+    {
+      "key": "newapi",
+      "name": "New API",
+      "port": 3000,
+      "role": "core",
+      "managed_by_us": false,
+      "allow_start": false,
+      "allow_stop": false,
+      "reason": "中转核心，外部进程/计划任务管理；控制台只观测，绝不启停"
+    },
+    {
+      "key": "freellmapi",
+      "name": "FreeLLMAPI（旧免费池）",
+      "port": 3001,
+      "role": "legacy",
+      "managed_by_us": false,
+      "allow_start": false,
+      "allow_stop": false,
+      "forbidden": true,
+      "reason": "已于 2026-10-16 废弃（免费池职能由 New API + LiteLLM 接管），但号池状态在内存，仍然禁止重启",
+      "expect_down": true,
+      "retired": true
+    },
+    {
+      "key": "agent2api",
+      "name": "Agent2API",
+      "port": 3065,
+      "role": "adapter",
+      "managed_by_us": false,
+      "allow_start": false,
+      "allow_stop": false,
+      "reason": "ZCode/Trae 免费通道，外部管理"
+    },
+    {
+      "key": "wb2api",
+      "name": "wb2api（自用号池）",
+      "port": 7863,
+      "role": "core",
+      "managed_by_us": false,
+      "allow_start": false,
+      "allow_stop": false,
+      "forbidden": true,
+      "reason": "内存里有号池状态，禁止重启（运维手册明文）"
+    },
+    {
+      "key": "opencode-4099",
+      "name": "opencode 池 4099",
+      "port": 4099,
+      "role": "pool",
+      "managed_by_us": false,
+      "forbidden": true,
+      "reason": "有看门狗，碰了会连锁重建，禁止操作"
+    },
+    {
+      "key": "opencode-4100",
+      "name": "opencode 池 4100",
+      "port": 4100,
+      "role": "pool",
+      "managed_by_us": false,
+      "forbidden": true,
+      "reason": "同上"
+    },
+    {
+      "key": "opencode-4101",
+      "name": "opencode 池 4101",
+      "port": 4101,
+      "role": "pool",
+      "managed_by_us": false,
+      "forbidden": true,
+      "reason": "同上"
+    },
+    {
+      "key": "litellm",
+      "name": "LiteLLM",
+      "port": 4000,
+      "role": "distributor",
+      "managed_by_us": false,
+      "allow_start": false,
+      "reason": "由 start-detached.py 管；控制台只观测 HTTP 健康"
+    },
+    {
+      "key": "qoder2api",
+      "name": "qoder2api-hub",
+      "port": 8790,
+      "role": "adapter",
+      "managed_by_us": true,
+      "allow_start": true,
+      "allow_stop": true,
+      "start": {
+        "cmd": [
+          "{pythonw}",
+          "qoder_proxy.py",
+          "--host",
+          "127.0.0.1",
+          "--port",
+          "8790"
+        ]
+      },
+      "reason": "svc_manager 可拉起；★ 端口 8790 归它，其它系统不得占用"
+    },
+    {
+      "key": "cf_adapter",
+      "name": "cf_adapter",
+      "port": 8791,
+      "role": "adapter",
+      "managed_by_us": true,
+      "allow_start": true,
+      "allow_stop": true,
+      "start": {
+        "cmd": [
+          "{pythonw}",
+          "cf_adapter.py",
+          "--port",
+          "8791",
+          "--localkey",
+          "{secret:cf_adapter_localkey}"
+        ]
+      },
+      "reason": "Cloudflare Workers AI 适配器（localkey 由补号5 目录下的启动脚本维持）"
+    },
+    {
+      "key": "chatglm_adapter",
+      "name": "chatglm_adapter",
+      "port": 8792,
+      "role": "adapter",
+      "managed_by_us": true,
+      "allow_start": true,
+      "allow_stop": true,
+      "reason": "智谱适配器"
+    },
+    {
+      "key": "media_adapter",
+      "name": "media_adapter",
+      "port": 8793,
+      "role": "adapter",
+      "managed_by_us": true,
+      "allow_start": true,
+      "allow_stop": true,
+      "reason": "媒体生成适配器"
+    },
+    {
+      "key": "pgw",
+      "name": "prompt-gateway",
+      "port": 8890,
+      "role": "adapter",
+      "managed_by_us": true,
+      "allow_start": true,
+      "allow_stop": true,
+      "reason": "提示词中转站（pgw.py serve）"
+    }
+  ],
+  "reserved_ports": [
+    {
+      "port": 8798,
+      "owner": "agent-memory-lab (agent-memory-os 控制台)",
+      "note": "记忆实验室，与 qoder2api-hub 的 8790 相邻，勿混"
+    },
+    {
+      "port": 8420,
+      "owner": "agent-memory-lab (TencentDB 网关)",
+      "note": ""
+    },
+    {
+      "port": 8310,
+      "owner": "agent-memory-lab (embedding)",
+      "note": ""
+    },
+    {
+      "port": 9999,
+      "owner": "agent-memory-lab (Ultron)",
+      "note": ""
+    },
+    {
+      "port": 6029,
+      "owner": "DSH Web GUI",
+      "note": ""
+    },
+    {
+      "port": 19878,
+      "owner": "dsh-model-hotreload bridge",
+      "note": ""
+    }
+  ],
+  "newapi_db": {
+    "path": "D:\\wb2api\\new-api\\one-api.db",
+    "note": "New API 的 SQLite 库；控制台一律 mode=ro 只读打开"
+  }
+}

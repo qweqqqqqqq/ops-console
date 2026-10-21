@@ -1,0 +1,147 @@
+{
+  "_comment": "策略层：阈值、禁区、补号流水线定义。控制台所有动作都要过这里；改这里等于改规程。",
+  "safety": {
+    "dry_run_by_default": true,
+    "require_confirm_token": [
+      "restock.apply",
+      "channel.rebuild_abilities",
+      "channel.update_keys",
+      "service.stop"
+    ],
+    "confirm_env": "OPS_CONSOLE_CONFIRM",
+    "max_actions_per_run": 3,
+    "action_timeout_sec": 120,
+    "verify_window_sec": 60,
+    "log_dir": "logs",
+    "lock_file": "logs/console.lock",
+    "auto_strip": false,
+    "guard_task": "ops-console-guard",
+    "guard_note": "每小时巡检；auto_strip=true 才会自动截断残留（默认只报告）"
+  },
+  "forbidden": {
+    "restart": [
+      3001,
+      7863,
+      4099,
+      4100,
+      4101
+    ],
+    "kill_imagename": [
+      "FreeLLMAPI.exe",
+      "wb2api.exe",
+      "opencode.exe"
+    ],
+    "shell_patterns": [
+      "taskkill /IM",
+      "Stop-Process -Name",
+      "killall"
+    ],
+    "note": "命中任何一条，控制台在参数校验阶段就拒绝执行（不依赖调用方自觉）"
+  },
+  "restock": {
+    "enabled": true,
+    "target": {
+      "source": "novai",
+      "base_url": "https://once.novai.su",
+      "channel_id": 15,
+      "channel_name": "免费渠道6",
+      "group": [
+        "default",
+        "free"
+      ],
+      "multi_key_mode": "failover"
+    },
+    "email": {
+      "whitelist_domains": [
+        "163.com",
+        "qq.com"
+      ],
+      "imap_host": "imap.qq.com",
+      "imap_port": 993,
+      "poll_interval_sec_min": 38,
+      "poll_folders": [
+        "INBOX",
+        "Junk"
+      ],
+      "note": "站点侧发码间隔 ≥38s；IMAP 轮询 >5min/次会锁信箱，取码窗口内只允许短轮询"
+    },
+    "quota": {
+      "max_accounts_per_run": 3,
+      "max_accounts_per_day": 10,
+      "min_interval_between_runs_min": 30,
+      "backoff_on_429_sec": 120,
+      "backoff_on_403_sec": 300
+    },
+    "stages": [
+      {
+        "id": "prepare_email",
+        "desc": "取白名单域名下的可用邮箱",
+        "impl": "manual|email_policy.py",
+        "destructive": false
+      },
+      {
+        "id": "request_code",
+        "desc": "GET /api/verification?email=…（间隔≥38s）",
+        "destructive": false,
+        "rate_limit_sec": 38
+      },
+      {
+        "id": "read_code",
+        "desc": "IMAP 扫 INBOX+Junk 取 6 位码",
+        "destructive": false
+      },
+      {
+        "id": "register",
+        "desc": "POST /api/user/register",
+        "destructive": false
+      },
+      {
+        "id": "login",
+        "desc": "POST /api/user/login → access_token",
+        "destructive": false
+      },
+      {
+        "id": "create_key",
+        "desc": "POST /api/token/ {remain_quota:0, expired_time:-1}",
+        "destructive": false
+      },
+      {
+        "id": "collect_keys",
+        "desc": "汇总新 key，去重，落 ops-console/state/keys-pending.json",
+        "destructive": false
+      },
+      {
+        "id": "validate_key",
+        "desc": "直连上游打目标模型，400/403/503 分别判定",
+        "destructive": false
+      },
+      {
+        "id": "update_channel",
+        "desc": "换行拼接 key + channel_info failover 写回渠道 15",
+        "destructive": true
+      },
+      {
+        "id": "rebuild_abilities",
+        "desc": "python na_abilities.py --only 15（★ 不跑则新 key 不生效）",
+        "destructive": true
+      },
+      {
+        "id": "smoke_test",
+        "desc": "python na_test15.py 实测 7 个 [free] 模型",
+        "destructive": false
+      }
+    ],
+    "hard_rules": [
+      "多 key 必须用换行分隔，绝不能逗号（逗号会被当整串发上游 → 401）",
+      "channel_info.multi_key_mode 必须是 failover，不是 polling（各家 key 支持的模型交集常为 0）",
+      "改完 key 必须重建 abilities，否则新 key 不生效且无报错",
+      "只有 163.com / qq.com 在站点邮箱白名单内，其它域一律不发码"
+    ]
+  },
+  "health": {
+    "http_timeout_sec": 5,
+    "svc_manager_timeout_sec": 25,
+    "stale_log_hours": 6,
+    "disk_free_gb_warn": 20
+  }
+}

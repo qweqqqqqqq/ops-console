@@ -1,0 +1,197 @@
+{
+  "_comment": "6 条补号产线的机器可读地图（来自 2026-10-21 只读侦察）。控制台按这里认领 '谁在干什么'。",
+  "lines": [
+    {
+      "id": "line5",
+      "name": "补号5",
+      "dir": "补号5",
+      "role": "adapter-stack",
+      "summary": "唯一对外供端口的适配层：pollinations 8794 / uno 8795 / retry 8796 / fallback 8797 + guard.py（10 分钟自愈）",
+      "entry": [
+        "start5*.bat"
+      ],
+      "daemons": [
+        "pollinations_adapter.py",
+        "uno_adapter.py",
+        "retry_proxy.py",
+        "fallback_proxy.py",
+        "guard.py"
+      ],
+      "ports": [
+        8794,
+        8795,
+        8796,
+        8797
+      ],
+      "tasks": [
+        "restock5-*"
+      ],
+      "state": [
+        "补号5\\*.json"
+      ]
+    },
+    {
+      "id": "line7",
+      "name": "补号7",
+      "dir": "补号7",
+      "role": "farm-outer",
+      "summary": "外网货源农场：pollinations / llm7 / puter / uno 的注册与建 Key，约 130 个 7号-*.py",
+      "entry": [
+        "7号-*.py",
+        "restock7-*"
+      ],
+      "daemons": [
+        "7号-看门狗",
+        "7号-护pollinations",
+        "7号-保温",
+        "7号-池子维护"
+      ],
+      "ports": [],
+      "tasks": [
+        "restock7-*"
+      ],
+      "state": [
+        "farm-*.json"
+      ]
+    },
+    {
+      "id": "line1",
+      "name": "补货-1号",
+      "dir": "补货-1号",
+      "role": "farm-key-transfer",
+      "summary": "jiugx / helpcoder 农场；1号-补货守护 + 静默巡检 + 转 Key 在跑",
+      "entry": [
+        "1号-*.py",
+        "静默*.vbs"
+      ],
+      "daemons": [
+        "1号-补货守护.py",
+        "静默巡检.py",
+        "1号-转Key.py"
+      ],
+      "ports": [],
+      "tasks": [
+        "补货-1号-*"
+      ],
+      "state": [
+        "farmsync-*.json"
+      ]
+    },
+    {
+      "id": "line2",
+      "name": "补货-2号",
+      "dir": "补货-2号",
+      "role": "farm-heaviest",
+      "summary": "负载最重：12 个常驻（任务守护 / 24h 目标 / 夜班巡检 / 热门健康 / 多邮箱循环 / 签到 / 余额 / 路由自愈 / 自动建渠道 / 每日余额 / 择机建渠道 / 扫站）",
+      "entry": [
+        "2号-守护自启.cmd",
+        "2号-*.py"
+      ],
+      "daemons": [
+        "2号-"
+      ],
+      "ports": [],
+      "tasks": [
+        "AI2-Restock-Guardian"
+      ],
+      "state": [
+        "checkin-state.json"
+      ]
+    },
+    {
+      "id": "line4",
+      "name": "补货-4号",
+      "dir": "补货-4号",
+      "role": "farm-husky",
+      "summary": "huskyapi / jiugx / helpcoder 农场；根目录 ai4-* 与 ai4-start.vbs / 一键修复.vbs 的实际产地；经 WMI 拉起以抗关窗",
+      "entry": [
+        "ai4-start.vbs",
+        "ai4-run.bat",
+        "一键修复.vbs"
+      ],
+      "daemons": [
+        "ai4-",
+        "slow_farm.py"
+      ],
+      "ports": [],
+      "tasks": [],
+      "state": [
+        "farm-*.json"
+      ]
+    },
+    {
+      "id": "line6",
+      "name": "补货-6号",
+      "dir": "补货-6号",
+      "role": "farm-deepseek",
+      "summary": "专攻 deepseek-flash：中枢.py / 库存系统.py / 开号.py；每小时静默跑 + 每日任务",
+      "entry": [
+        "6号-*.py"
+      ],
+      "daemons": [
+        "6号-"
+      ],
+      "ports": [],
+      "tasks": [
+        "6号-*"
+      ],
+      "state": [
+        "6号-*.json"
+      ]
+    }
+  ],
+  "shared_pipeline": {
+    "restock_daemon": {
+      "script": "restock_daemon.py",
+      "interval_min": 20,
+      "writes": "restock-daemon.json"
+    },
+    "restock_once": {
+      "script": "restock.py",
+      "writes": "farmsync-*.json"
+    },
+    "pool_refresh": {
+      "script": "pool-refresh.py",
+      "via": "pool-refresh.cmd",
+      "task": "FreeLLMAPI-PoolRefresh",
+      "interval_min": 2,
+      "writes": "pool-history.json"
+    },
+    "checkin": {
+      "script": "checkin_daemon.py",
+      "status": "已被 2号/6号签到守护替代，当前无进程"
+    },
+    "scheduler_suspect": {
+      "script": "ai4-统一调度器.py",
+      "status": "无计划任务引用，用途待确认"
+    }
+  },
+  "state_files": [
+    {
+      "path": "restock-daemon.json",
+      "max_age_min": 60,
+      "desc": "restock 守护每轮结果"
+    },
+    {
+      "path": "pool-history.json",
+      "max_age_min": 10,
+      "desc": "号池历史（每 2 分钟追加）"
+    },
+    {
+      "path": "checkin-state.json",
+      "max_age_min": 1440,
+      "desc": "签到当日状态（checkin_daemon 已停用，职能被 2号/6号签到守护接管）",
+      "retired": true
+    },
+    {
+      "path": "svc-state.json",
+      "max_age_min": 10,
+      "desc": "svc_manager 服务状态"
+    },
+    {
+      "path": "pool-refresh.log",
+      "max_size_mb": 50,
+      "desc": "号池刷新日志（已 31.7MB，需轮转）"
+    }
+  ]
+}

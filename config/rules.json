@@ -1,0 +1,89 @@
+{
+  "_comment": "12 条硬规矩 → 机器可检查项。check=auto 的由 doctor 自动跑；manual 的列为人工/后续能力。",
+  "rules": [
+    {
+      "id": "R1",
+      "severity": "error",
+      "check": "forbidden_listening",
+      "rule": "3001 FreeLLMAPI / 7863 wb2api / 4099-4101 opencode 只许探活，不许启停",
+      "source": "运维手册-给AI用 端口表"
+    },
+    {
+      "id": "R2",
+      "severity": "warn",
+      "check": "duplicate_instance",
+      "rule": "同一守护脚本只允许单实例（重复 supervisor 抢 SQLite 会 SQLITE_BUSY 崩循环）",
+      "source": "ai4-start.vbs 注释"
+    },
+    {
+      "id": "R3",
+      "severity": "warn",
+      "check": "state_stale",
+      "rule": "关键状态文件必须按时更新，过期=守护停了",
+      "source": "侦察实测"
+    },
+    {
+      "id": "R4",
+      "severity": "warn",
+      "check": "big_log",
+      "rule": "单日志超过阈值要轮转（pool-refresh.log 已 31.7MB）",
+      "source": "侦察实测"
+    },
+    {
+      "id": "R5",
+      "severity": "info",
+      "check": "disk_free",
+      "rule": "磁盘余量过低时禁止批量注册（会写爆 farm-*.json）",
+      "source": "通用"
+    },
+    {
+      "id": "R6",
+      "severity": "error",
+      "check": "port_owner",
+      "rule": "保留端口归固定服务，别人占了就是冲突（8790 教训）",
+      "source": "2026-10-21 实操"
+    },
+    {
+      "id": "R7",
+      "severity": "error",
+      "check": "auto",
+      "rule": "New API 库一致性：abilities.group 不得含逗号；abilities 不得指向停用/不存在的渠道；停渠道必须同时停 abilities；Key 不得为空/掩码；同一 (group,model,channel) 不得重复",
+      "source": "流水线全貌 §12.3/§14（6号 2026-10-21）"
+    },
+    {
+      "id": "R8",
+      "severity": "error",
+      "check": "manual",
+      "rule": "改库前先停 New API，try/finally 保证起回；配置改动走 locked-edit.py",
+      "source": "运维手册 硬规矩1/3"
+    },
+    {
+      "id": "R9",
+      "severity": "warn",
+      "check": "manual",
+      "rule": "New API options 有 90~100s 缓存，改完等 ≥95s 再验证",
+      "source": "07-踩坑 坑7"
+    },
+    {
+      "id": "R10",
+      "severity": "error",
+      "check": "manual",
+      "rule": "全局频率闸门：邮箱白名单测试 38s、geekerone 190s、登录 20 次/20 分、剪枝 workers≤4",
+      "source": "07-踩坑 坑20/21、作战手册"
+    },
+    {
+      "id": "R11",
+      "severity": "error",
+      "check": "manual",
+      "rule": "禁用 subprocess.run(capture_output=True, timeout=N)；一律 Popen+DEVNULL+CREATE_NO_WINDOW",
+      "source": "运维手册 坑1"
+    },
+    {
+      "id": "R12",
+      "severity": "warn",
+      "check": "manual",
+      "rule": "计划任务用 XML(UTF-16) 注册；/TR 装不了带空格路径；任务经 .bat 转发以留日志",
+      "source": "2026-10-21 实操"
+    }
+  ]
+}

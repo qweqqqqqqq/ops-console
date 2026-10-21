@@ -1,0 +1,21 @@
+# ── 运行时状态（含账号、密钥、数据库备份：绝不入库）──
+state/
+logs/
+*.log
+*.jsonl
+
+# ── 本机密钥（模板见 config/secrets.example.json）──
+config/secrets.local.json
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ── 编辑器 / 系统 ──
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+*.bak-*
